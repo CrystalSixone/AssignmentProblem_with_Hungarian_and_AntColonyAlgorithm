@@ -10,6 +10,7 @@ import copy
 import time
 
 from matplotlib import pyplot as plt
+from numpy.core.fromnumeric import sort
 from costMatrix import getDistance,randomMatrix,loadMatrix,randomMap,loadMap
 
 class Hungarian():
@@ -225,6 +226,62 @@ class Hungarian():
             matrix = np.hstack((matrix,temp))
         return matrix
     
+    def methodYadaiah(self,matrix):
+        """ The split method proposed by Yadaiah
+        :param matrix: the input matrix
+        :return matrixs
+        """
+        matrix = np.array(matrix).transpose()
+        sum_row = matrix.sum(axis=1)
+        sum_col = matrix.sum(axis=0)
+        sort_row = sorted(enumerate(sum_row),key=lambda x:x[1])
+        sort_col = sorted(enumerate(sum_col),key=lambda x:x[1])
+        sub_matrix = []
+        temp_list = []
+        for i in range(matrix.shape[1]):
+            temp_list.append(sort_row[i][0])
+        temp_list.sort()
+        for item in temp_list:
+            sub_matrix.append(matrix[item])
+        
+        sub_matrix = np.array(sub_matrix)
+
+        subsub_matrix = []
+        temp_list_col = []
+        for i in range(matrix.shape[0]-matrix.shape[1]):
+            temp_list_col.append(sort_col[i][0])
+        temp_list_col.sort()
+
+        for i in range(matrix.shape[0]):
+            row_list = []
+            if i in temp_list:
+                continue
+            for j in range(matrix.shape[1]):
+                if j in temp_list_col:
+                    row_list.append(matrix[i][j])
+            subsub_matrix.append(row_list)
+        subsub_matrix = np.array(subsub_matrix)
+
+        print('temp_list',temp_list)
+        print('temp_list_col',temp_list_col)
+        np.save('sub_matrix.npy',sub_matrix)
+        np.save('subsub_matrix.npy',subsub_matrix)
+        print(sub_matrix,'\n',subsub_matrix)
+    
+    def methodBetts(self,matrix):
+        """ The copy and zero padding method proposed by Betts
+        :param matrix: the input matrix
+        :return matrixs
+        """
+        matrix = np.array(matrix).transpose()
+        matrix = np.column_stack((matrix,matrix))
+        m,n = matrix.shape
+        temp_zero = np.zeros([n-m,n])
+        matrix = np.row_stack((matrix,temp_zero))
+        np.save('betts_matrix',matrix)
+        print(matrix)
+
+    
     def drawMap(self,uav_x,uav_y,target_x,target_y):
         """
         draw the calculated result between the uavs and targets on the map.
@@ -315,6 +372,12 @@ class Hungarian():
         print('total cost: {}'.format(total_cost))
         print('total time:{}'.format(total_time))
         print('==============finish==============')
+    
+    def runYadaiah(self):
+        self.methodYadaiah(self.input_matrix)
+    
+    def runBetts(self):
+        self.methodBetts(self.input_matrix)
 
 if __name__ == '__main__':
     test = [
@@ -373,15 +436,26 @@ if __name__ == '__main__':
         [21,9,12,9,32,10,19,25,16,10]
     ]
 
+    # sub_matrix = np.load('sub_matrix.npy')
+    # subsub_matrix = np.load('subsub_matrix.npy')
+    betts_matrix = np.load('betts_matrix.npy')
     # matrix = loadMatrix(40,40,1)
     # matrix = generateMap(25,25)
     # uav_x,uav_y,target_x,target_y,matrix = loadMap()
-    matrix = test_unbalanced_ap3
-    sol_1 = Hungarian(matrix)
-    # print(sol.convertZeroMatrix())
-    sol_1.runPaddingZero()
+    # matrix = test_unbalanced_ap3
+    matrix = betts_matrix
+    # sol_1 = Hungarian(matrix)
+    # sol_1.runPaddingZero()
+
     sol_2 = Hungarian(matrix)
     sol_2.runQuazzafi()
+
+    # sol_3 = Hungarian(matrix)
+    # sol_3.runYadaiah()
+
+    # sol_4 = Hungarian(matrix)
+    # sol_4.runBetts()
+    
     # sol.drawMap(uav_x,uav_y,target_x,target_y)
 
     # test = [

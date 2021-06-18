@@ -59,7 +59,7 @@ def printAllocation(path,cost_matrix,uav_num,uav_x=None,uav_y=None,target_x=None
     path = path[0]
     path.sort()
     if draw_map:
-        plt.title('result')
+        plt.title('Result')
         plt.xlabel('x')
         plt.ylabel('y')
         plt.xlim([1,110])
@@ -80,9 +80,9 @@ def printAllocation(path,cost_matrix,uav_num,uav_x=None,uav_y=None,target_x=None
                 plt.text(x2+1,y2+1,'target'+str(temp_j),fontsize=10)
                 # plt.arrow(x1,y1,x2-x1,y2-y1,width=1)
     print('总代价',cost)
-    plt.legend(loc='center left',bbox_to_anchor=(1,0.5))
+    # plt.legend(loc='center left',bbox_to_anchor=(1,0.5))
     plt.savefig('result_{}_ant.png'.format(len(cost_matrix)),dpi=450,bbox_inches='tight')
-    plt.show()
+    # plt.show()
 
 def getDistance(x1,y1,x2,y2):
     return math.sqrt((x1-x2)**2+(y1-y2)**2)
@@ -198,19 +198,26 @@ if __name__ == '__main__':
         [10,7,3,2]
     ]
 
+    test_unblanced_6= [
+        [120,70,90,100,70,90],
+        [80,90,60,80,60,60],
+        [70,170,120,110,140,90],
+        [150,140,60,70,60,100],
+        [40,100,70,60,100,90]
+    ]
     # test4 = randomMatrix(40,40)
     # print(test4)
     
-    n_ants = 100
-    n_best = 100
-    n_iterations = 300
+    n_ants = 45
+    n_best = 45
+    n_iterations = 200
     decay = 0.8
     alpha = 1
     beta = 3
     
     """定matrix，不做图
     """
-    matrix = test_unbalanced_ap2
+    matrix = test2
     uav_num = len(matrix)
     filename = 'uav_{}_ants_{}_ite_{}_decay_{}_alpha_{}_beta_{}'.format(uav_num,n_ants,n_iterations,\
         decay,alpha,beta)
@@ -218,10 +225,14 @@ if __name__ == '__main__':
 
     distances = generateDistances(matrix)
     ant_colony = AntColony(distances, n_ants, n_best, n_iterations, decay, uav_num, filename,alpha, beta)
-    shortest_path = ant_colony.run()
-    print ("shorted_path: {}".format(shortest_path))
-    printAllocation(shortest_path,matrix,uav_num,draw_map=False)
-
+    total_shortest_path = 9999
+    for i in range(1):
+        shortest_path = ant_colony.run()
+        if shortest_path[1] < total_shortest_path:
+            total_shortest_path = shortest_path[1]
+        print ("shorted_path: {}".format(shortest_path))
+        printAllocation(shortest_path,matrix,uav_num,draw_map=False)
+    print('last result:',total_shortest_path)
     """生成地图，对结果连线
     """
     # uav_x,uav_y,target_x,target_y,matrix = generateMap(20,20)

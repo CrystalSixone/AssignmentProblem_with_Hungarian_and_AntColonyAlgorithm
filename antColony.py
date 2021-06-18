@@ -7,7 +7,7 @@ import time
 SAVE_DATA = True
 
 class AntColony(object):
-    def __init__(self, distances, n_ants, n_best, n_iterations, decay, uav_num, filename='result', alpha=1, beta=1):
+    def __init__(self, distances, n_ants, n_best, n_iterations, decay, uav_num, filename='result', alpha=1, beta=1,max_time=0):
         """
         Args:
             distances (2D numpy.array): Square matrix of distances. Diagonal is assumed to be np.inf.
@@ -19,6 +19,7 @@ class AntColony(object):
             beta (int or float): exponent on distance, higher beta give distance more weight. Default=1
             uav_num(int): the number of the uav
             filename(str): save the data into csv file
+            max_time(int): per uav execute the maxmium number of the tasks
         Example:
             ant_colony = AntColony(german_distances, 100, 20, 2000, 0.95, alpha=1, beta=2)          
         """
@@ -33,8 +34,11 @@ class AntColony(object):
         self.alpha = alpha
         self.beta = beta
         self.uav_num = uav_num
-        self.uav_visited_time = np.zeros([1,self.uav_num])
-        self.uav_visited_max_time = 2
+        if max_time == 0 or max_time > self.uav_num:
+            self.uav_visited_max_time = self.uav_num
+        else:
+            self.uav_visited_max_time = max_time    
+        print(self.uav_visited_max_time)       
         # drawing
         self.draw_x = np.arange(n_iterations)
         self.draw_y = np.ones(n_iterations)
@@ -88,19 +92,30 @@ class AntColony(object):
         return total_dist
 
     def gen_all_paths(self):
+        """generate paths for all ants
+        """
         all_paths = []
         for i in range(self.n_ants):
+            start = np.random.randint(self.uav_num)
             path = self.gen_path(0)
+            # path = self.gen_path(start) # randomly generate the start point
             all_paths.append((path, self.gen_path_dist(path)))
         return all_paths
 
     def gen_path(self, start):
+        """generate one path
+        """
         path = []
         visited = set()
+        visited_task = set()
+        self.uav_visited_time = np.zeros([1,self.uav_num])
         visited.add(start)
+        self.uav_visited_time[0][start] += 1
         prev = start
         # for i in range(len(self.distances) - 1):
         while len(visited) < len(self.distances):  # all the nodes should be visited at least once
+        # while True:
+            # print('visited',visited)
             move = self.pick_move(self.pheromone[prev], self.distances[prev], visited)
             path.append((prev, move))
             prev = move
@@ -108,31 +123,38 @@ class AntColony(object):
                 visited.add(move)
             if move < self.uav_num:
                 self.uav_visited_time[0][move] += 1
-        path.append((prev, start)) # going back to where we started    
+
+            # if move not in visited_task and move >= self.uav_num: # Chinese version
+            #     visited_task.add(move)
+            # if len(visited_task) == len(self.distances)-self.uav_num:
+            #     break
+
+        path.append((prev, start)) # going back to where we startqed    
         return path
 
     def pick_move(self, pheromone, dist, visited):
         pheromone = np.copy(pheromone)
         for i in visited:
-            if i >= self.uav_num:
+            if i >= self.uav_num: # node i is the target
                 pheromone[i] = 0  # node i cannot be visited again
-            # elif i < self.uav_num:
-            #     if self.uav_visited_time[0][i] > self.uav_visited_max_time:
-            #         pheromone[i] = 0
+            elif i < self.uav_num:# node i is the uav
+                if self.uav_visited_time[0][i] >= self.uav_visited_max_time:
+                    pheromone[i] = 0
         # pheromone[list(visited)] = 0
         row = pheromone ** self.alpha * (( 1.0 / dist) ** self.beta)
         norm_row = (row / row.sum())
+        # print('norm_row',norm_row)
         move = np_choice(self.all_inds, 1, p=norm_row)[0]
         return move
 
     def drawing(self):
-        plt.title("Ant Colony")
+        plt.title("Result")
         plt.xlabel('iteration')
         plt.ylabel('cost')
         plt.plot(self.draw_x,self.draw_y)
         if SAVE_DATA:
-            plt.savefig('{}_fig.png'.format(self.filename))
-        plt.show()
+            plt.savefig('{}_fig.png'.format(self.filename),dpi=450)
+        # plt.show()
     
     def saveData(self):
         np.save('{}_x.npy'.format(self.filename),self.draw_x)
