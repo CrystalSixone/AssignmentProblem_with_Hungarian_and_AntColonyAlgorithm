@@ -208,16 +208,16 @@ if __name__ == '__main__':
     # test4 = randomMatrix(40,40)
     # print(test4)
     
-    n_ants = 45
+    n_ants = 50
     n_best = 45
-    n_iterations = 200
-    decay = 0.8
+    n_iterations = 300
+    decay = 0.9
     alpha = 1
-    beta = 3
+    beta = 4
     
     """定matrix，不做图
     """
-    matrix = test2
+    matrix = test_unbalanced_ap2
     uav_num = len(matrix)
     filename = 'uav_{}_ants_{}_ite_{}_decay_{}_alpha_{}_beta_{}'.format(uav_num,n_ants,n_iterations,\
         decay,alpha,beta)
@@ -226,7 +226,7 @@ if __name__ == '__main__':
     distances = generateDistances(matrix)
     ant_colony = AntColony(distances, n_ants, n_best, n_iterations, decay, uav_num, filename,alpha, beta)
     total_shortest_path = 9999
-    for i in range(1):
+    for i in range(5):
         shortest_path = ant_colony.run()
         if shortest_path[1] < total_shortest_path:
             total_shortest_path = shortest_path[1]

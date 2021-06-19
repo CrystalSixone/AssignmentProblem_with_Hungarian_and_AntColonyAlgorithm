@@ -26,6 +26,7 @@ class AntColony(object):
         self.distances  = distances
         self.max_num = distances[0][0]
         self.pheromone = np.ones(self.distances.shape) / len(distances)
+        self.last_pheromone = np.copy(self.pheromone) # used to mutation
         self.all_inds = range(len(distances))
         self.n_ants = n_ants
         self.n_best = n_best
@@ -62,15 +63,22 @@ class AntColony(object):
             # print (shortest_path)
             if shortest_path[1] < all_time_shortest_path[1]:
                 all_time_shortest_path = shortest_path
+                # print('last',self.last_pheromone)
+                self.last_pheromone = np.copy(self.pheromone) # used for mutation
+                # print('newest',self.last_pheromone)
                 count_stable = 0            
-            # self.pheromone = self.pheromone * self.decay   
+            self.pheromone = self.pheromone * 0.9  
             # self.draw_y[i] = all_time_shortest_path[1] - self.uav_num
             self.draw_y[i] = all_time_shortest_path[1]
 
             count_stable += 1
-            if count_stable >= 100: # break if the shortest path keep stable more than 100 times
-                self.draw_y[i:] = self.draw_y[i]
-                break
+            # if count_stable >= 100: # break if the shortest path keep stable more than 100 times
+            #     self.draw_y[i:] = self.draw_y[i]
+            #     break
+
+            if count_stable >= 50: # mutation if the shortest path keep stable more than 30 times
+                self.random_pick_mutation()
+                count_stable = 0
 
         print('total time:',time.time()-start_time)
         # if SAVE_DATA:
@@ -78,6 +86,25 @@ class AntColony(object):
         self.drawing()     
         return all_time_shortest_path
 
+    def random_pick_mutation(self):
+        """ mutation
+        """
+        print('mutation')
+        # mutation_list = []
+        length = len(self.distances)
+        mutation_num = int(length*length/3)
+        # print('last',self.last_pheromone)
+        # print('newest',self.pheromone)
+        # print('===========compare============')
+        # print(self.pheromone-self.last_pheromone)
+        for i in range(mutation_num):
+            x,y = np.random.randint(self.uav_num),np.random.randint(length) # randomly pick one edge to mutation
+            # print('x:{},y:{}'.format(x,y))
+            # print('before:{},after:{}'.format(self.pheromone[x][y],self.last_pheromone[x][y]))
+            # if self.pheromone[x][y] != self.last_pheromone[x][y]:
+            #     print('before:{},after:{}'.format(self.pheromone[x][y],self.last_pheromone[x][y]))
+            self.pheromone[x][y] = self.last_pheromone[x][y] # mutation
+            
     def spread_pheronome(self, all_paths, n_best, shortest_path):
         sorted_paths = sorted(all_paths, key=lambda x: x[1])
         for path, dist in sorted_paths[:n_best]:
